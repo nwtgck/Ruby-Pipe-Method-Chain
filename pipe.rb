@@ -27,9 +27,12 @@ end
 # すべてのクラスに適応する
 Object.constants.select{|c| Object.const_get(c).class == Class}.map{|c| Object.const_get(c)}.each do |clazz|
 	clazz.class_eval do
-		# 「|」あるときはbarに退避させる
-		alias_method(:bar, :|) if method_defined?(:|)
-		alias_method(:hat, :'^') if method_defined?(:'^') 
+		# 「|」あるときは「__|__」に退避させる
+		alias_method(:__bar, :|) if method_defined?(:|)
+		alias_method(:__hat, :'^') if method_defined?(:'^')
+
+		private :__bar
+		private :__hat
 
 		# self.method が self | :methodで動くように
 		def | (method, *others)
@@ -40,16 +43,16 @@ Object.constants.select{|c| Object.const_get(c).class == Class}.map{|c| Object.c
 				self.send(method.name, *method.params)
 			else
 				# method名がシンボルでないなら、普通の「|」を呼ぶ
-				bar(method, *others) if self.class.method_defined? :bar
+				__bar(method, *others) if self.class.method_defined? :__bar
 			end
 		end
 
 		# puts "hello"を "hello" ^ :putsで動かす
 		def ^(func)
 			if func.class == Symbol
-				send(func, self) if self.class.method_defined? :hat
+				send(func, self) if self.class.method_defined? :__hat
 			else
-				send(:hat, func) if self.class.method_defined? :hat
+				send(:__hat, func) if self.class.method_defined? :__hat
 			end
 			
 		end
