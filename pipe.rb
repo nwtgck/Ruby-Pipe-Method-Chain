@@ -9,17 +9,17 @@
 
 # メソッド名と引数を管理するため
 class SymMethod
-	attr_reader :name, :params
-	def initialize(name, params)
-		@name, @params = name, params
+	attr_reader :name, :params, :block
+	def initialize(name, params, &block)
+		@name, @params, @block = name, params, block
 	end
 end
 
 # シンボル[]をした時にSymMethodを返すようにする
 class Symbol
 	# method(10)が:method[10]
-	def [] *params
-		SymMethod.new(self, params)
+	def [] *params, &block
+		SymMethod.new(self, params, &block)
 	end
 end
 
@@ -31,31 +31,34 @@ Object.constants.select{|c| Object.const_get(c).class == Class}.map{|c| Object.c
 		alias_method(:__bar, :|) if method_defined?(:|)
 		alias_method(:__hat, :'^') if method_defined?(:'^')
 
-		private :__bar
-		private :__hat
+		private :__bar if method_defined?(:__bar)
+		private :__hat if method_defined?(:__hat)
 
 		# self.method が self | :methodで動くように
-		def | (method, *others)
+		def | (method, *others, &block)
 			# method名がシンボルなら
 			if method.class == Symbol
 				self.send(method)
 			elsif method.class == SymMethod
-				self.send(method.name, *method.params)
+				self.send(method.name, *method.params, &method.block)
 			else
 				# method名がシンボルでないなら、普通の「|」を呼ぶ
-				__bar(method, *others) if self.class.method_defined? :__bar
+				__bar(method, *others, &block) if self.class.private_method_defined? :__bar
 			end
 		end
 
 		# puts "hello"を "hello" ^ :putsで動かす
-		def ^(func)
+		def ^(func, *others, &block)
 			if func.class == Symbol
-				send(func, self) if self.class.method_defined? :__hat
+				send(func, self)
 			else
-				send(:__hat, func) if self.class.method_defined? :__hat
+				# 普通の「^」を呼ぶ
+				send(:__hat, func, *others, &block) if self.class.private_method_defined? :__hat
 			end
 			
 		end
 
 	end
 end
+
+
