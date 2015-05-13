@@ -56,7 +56,3 @@ Object.constants.select{|c| Object.const_get(c).class == Class}.map{|c| Object.c
 
 	end
 end
-
-
-# p *1..10] | :size
-1 ^ 1 ^ :puts
